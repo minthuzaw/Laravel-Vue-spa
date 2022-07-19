@@ -8,12 +8,12 @@
                 </button>
             </div>
             <div class="col-md-4">
-                <form action="">
+                <form @submit.prevent="show">
                     <div class="input-group">
-                        <input type="text" placeholder="Search" class="form-control">
+                        <input type="text" v-model="search" placeholder="Search" class="form-control">
 
                         <div class="input-group-append">
-                            <button class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
@@ -63,7 +63,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr v-for="product in products" :key="products.id">
+                    <tr v-for="product in products.data" :key="products.id">
                         <td>{{ product.id }}</td>
                         <td>{{ product.name }}</td>
                         <td>{{ product.price }}</td>
@@ -78,19 +78,30 @@
                     </tr>
                     </tbody>
                 </table>
+                <sliding-pagination
+                    :current="currentPage"
+                    :total="totalPages"
+                    @page-change="show"
+                ></sliding-pagination>
             </div>
         </div>
     </div>
 </template>
 
 <script>
+import SlidingPagination from 'vue-sliding-pagination'
+
 export default {
     name: "ProductComponent",
+    components: {SlidingPagination},
 
     data() {
         return {
+            currentPage: 1,
+            totalPages: 10,
+            search: '',
             isEdit: false,
-            products: [],
+            products: {},
             product: {
                 id: '',
                 name: '',
@@ -100,8 +111,8 @@ export default {
     },
 
     methods: {
-        show() {
-            axios.get('/api/products')
+        show(page = 1) {
+            axios.get(`/api/products?page=${page}&search=${this.search}`)
                 .then(response => {
                     this.products = response.data
                 })
@@ -149,7 +160,7 @@ export default {
         },
 
         destroy(id) {
-            if (! confirm('Are sure to delete?')){
+            if (!confirm('Are sure to delete?')) {
                 return;
             }
 

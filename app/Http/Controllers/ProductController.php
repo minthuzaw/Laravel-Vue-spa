@@ -5,13 +5,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductStoreRequest;
 use App\Http\Requests\ProductUpdateRequest;
 use App\Models\Product;
-use Illuminate\Http\Request;
+
 
 class ProductController extends Controller
 {
     public function index()
     {
-        return Product::orderBy('id', 'desc')->get();
+//        $products = Product::query();
+//        if(request('search')){
+//            return $products->where('name', 'like', '%' .request('search'). '%')
+//                ->orderBy('id', 'desc')->get();
+//        }
+//        else{
+//            return $products->orderBy('id', 'desc')->paginate(10);
+//        }
+
+        return Product::when(request('search'), function($query){
+            $query->where('name', 'like', '%' .request('search'). '%');
+        })->orderBy('id', 'desc')->paginate(10);
+
     }
 
     public function store(ProductStoreRequest $request)
