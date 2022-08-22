@@ -31,15 +31,21 @@
                         {{ isEdit ? 'Edit' : 'Create' }}
                     </h3>
                     <div class="card-body">
-                        <form @submit.prevent="isEdit ? update() : store()">
+                        <AlertError :form="product" :message="errorMessage" />
+
+                        <form @submit.prevent="isEdit ? update() : store()" @keydown="product.onKeydown($event)">
                             <div class="form-group my-2">
                                 <label>Name :</label>
-                                <input v-model="product.name" type="text" class="form-control">
+                                <input v-model="product.name" type="text" name="name" class="form-control"
+                                :class="{ 'is-invalid' : product.errors.has('name') }">
+                                 <HasError :form="product" field="name"/>
                             </div>
 
                             <div class="form-group">
                                 <label>Price : </label>
-                                <input v-model="product.price" type="text" inputmode="numeric" class="form-control">
+                                <input v-model="product.price" type="text" inputmode="numeric" class="form-control"
+                                :class="{ 'is-invalid' : product.errors.has('price') }"/>
+                                <has-error :form="product" field="price"></has-error>
                             </div>
 
                             <div class="d-flex justify-content-end">
@@ -90,6 +96,7 @@
 
 <script>
 import SlidingPagination from 'vue-sliding-pagination'
+import Form from 'vform'
 
 export default {
     name: "ProductComponent",
@@ -102,56 +109,71 @@ export default {
             search: '',
             isEdit: false,
             products: {},
-            product: {
+            product: new Form({
                 id: '',
                 name: '',
                 price: ''
-            }
+            }),
+            errorMessage: '',
         }
     },
 
     methods: {
         show(page = 1) {
+            this.$Progress.start()
             axios.get(`/api/products?page=${page}&search=${this.search}`)
                 .then(response => {
                     this.products = response.data
+                    this.$Progress.finish()
                 })
                 .catch(error => {
+                    this.$Progress.fail()
                     console.log(error)
                 });
         },
 
         create() {
+            this.product.clear();
             this.isEdit = false;
-            this.product.id = '';
-            this.product.name = '';
-            this.product.price = '';
+            // this.product.id = '';
+            // this.product.name = '';
+            // this.product.price = '';
+            this.product.reset();
         },
 
         store() {
-            axios.post('/api/products', this.product)
+            this.product.post('/api/products')
                 .then(response => {
                     this.show();
-                    this.product.id = '';
-                    this.product.name = '';
-                    this.product.price = '';
+                    // this.product.id = '';
+                    // this.product.name = '';
+                    // this.product.price = '';
+                    this.product.reset();
+                })
+                .catch(error => {
+                    // console.log(error.response.data.message);
+                    this.errorMessage = error.response.data.message;
                 });
+
         },
 
         edit(product) {
+            this.product.clear();
             this.isEdit = true;
-            this.product.id = product.id;
-            this.product.name = product.name;
-            this.product.price = product.price;
+            this.product.fill(product);
+            // this.product.id = product.id;
+            // this.product.name = product.name;
+            // this.product.price = product.price;
         },
 
         update() {
-            axios.put(`/api/products/${this.product.id}`, this.product)
+            this.product.put(`/api/products/${this.product.id}`)
                 .then(response => {
                     this.show();
-                    this.product.id = '';
-                    this.product.name = '';
-                    this.product.price = '';
+                    // this.product.id = '';
+                    // this.product.name = '';
+                    // this.product.price = '';
+                    this.product.reset();
                     this.isEdit = false;
                 })
                 .catch(error => {
